@@ -28,16 +28,29 @@ function(myproject_setup_dependencies)
     cpmaddpackage("gh:catchorg/Catch2@3.3.2")
   endif()
 
-  if(NOT TARGET CLI11::CLI11)
-    cpmaddpackage("gh:CLIUtils/CLI11@2.3.2")
-  endif()
-
-  if(NOT TARGET ftxui::screen)
-    cpmaddpackage("gh:ArthurSonzogni/FTXUI@5.0.0")
-  endif()
-
   if(NOT TARGET tools::tools)
     cpmaddpackage("gh:lefticus/tools#update_build_system")
   endif()
+  if(NOT TARGET glfw)
+    cpmaddpackage(
+      NAME
+      GLFW
+      GITHUB_REPOSITORY
+      glfw/glfw
+      GIT_TAG
+      3.4
+      OPTIONS
+      "GLFW_BUILD_TESTS OFF"
+      "GLFW_BUILD_EXAMPLES OFF"
+      "GLFW_BUILD_DOCS OFF")
+  endif()
+  find_package(OpenGL REQUIRED)
+
+  #  set(GLEW_BUILD_STATIC
+  #      ON
+  #      CACHE BOOL "Build static GLEW" FORCE)
+  #  set(GLEW_BUILD_SHARED
+  #      OFF
+  #      CACHE BOOL "Do not build shared GLEW" FORCE)
 
 endfunction()
