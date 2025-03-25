@@ -1,12 +1,16 @@
 //
-#include <cstddef>
+#include <cassert>
+#include <filesystem>
+#include <fstream>
 #include <glad/glad.h>//
 //
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
+#include <cstddef>
 #include <exception>
 #include <iostream>
 #include <print>
+#include <sstream>
 #include <string_view>
 #include <vector>
 
@@ -50,6 +54,17 @@ static unsigned int CreateShader(std::string_view vertexShader, std::string_view
 
   return Prog;
 }
+// NOLINTNEXTLINE
+static unsigned int CreateShaderFromFile(const std::filesystem::path &vertexShaderPath,
+  const std::filesystem::path &fragmentShaderPath)
+{
+  assert(std::filesystem::exists(vertexShaderPath) && std::filesystem::exists(fragmentShaderPath));
+  std::stringstream VertexShaderStream;
+  VertexShaderStream << std::ifstream(vertexShaderPath).rdbuf();
+  std::stringstream FragmentShaderStream;
+  FragmentShaderStream << std::ifstream(fragmentShaderPath).rdbuf();
+  return CreateShader(VertexShaderStream.str(), FragmentShaderStream.str());
+}
 
 int main()
 {
@@ -82,23 +97,9 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, nullptr);
 
-    const unsigned int Shader = CreateShader(
-      "#version 330 core\n"
-      "\n"
-      "layout(location = 0) in vec4 position;\n"
-      "void main()\n"
-      "{\n"
-      " gl_Position = position;\n"
-      "}\n",
-      "#version 330 core\n"
-      "\n"
-      "layout(location = 0) out vec4 colour;\n"
-      "void main()\n"
-      "{\n"
-      " colour = vec4(1.0, 0.0, 0.0, 1.0);\n"
-      "}\n"
-
-    );
+    const unsigned int Shader =
+      CreateShaderFromFile(std::filesystem::current_path() / "glsl" / "baseVertexShader.vert.glsl",
+        std::filesystem::current_path() / "glsl" / "redFragmentShader.frag.glsl");
     glUseProgram(Shader);
 
     /* Loop until the user closes the window */
