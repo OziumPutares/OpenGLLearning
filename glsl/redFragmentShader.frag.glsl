@@ -5,9 +5,12 @@ out vec4 FragColor;
 
 void main() {
     vec3 color1 = vec3(1.0, 0.0, 0.0); // Red
-    vec3 color2 = vec3(0.0, 0.0, 1.0); // Blue
-    vec4 targetRedCoord = vec4()
-    vec3 gradient = mix(color1, color2, vTexCoord.x*0.5 + vTexCoord.y*0.5);
+    vec3 color2 = vec3(0.0, 0.0 , 0.0); // Black
+    vec3 blue = vec3(0.0, 0.0 , 1.0); // Blue
+    vec3 color3 = vec3(0.0, 1.0, 0.0);
+    vec3 gradientTmp2 = mix(blue, color3, vTexCoord.x );
+    vec3 gradientTmp1 = mix(gradientTmp2, color2, vTexCoord.y);
+    vec3 finalGradient = mix(gradientTmp1, color1, vTexCoord.y);
 
-    FragColor = vec4(gradient, 1.0);
+    FragColor = vec4(finalGradient, 1.0);
 }

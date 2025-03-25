@@ -10,12 +10,30 @@
 #include <exception>
 #include <iostream>
 #include <print>
+#include <spdlog/spdlog.h>
 #include <sstream>
+#include <stdexcept>
 #include <string_view>
 #include <vector>
 
 // NOLINTNEXTLINE
-static auto CompileShader(std::string_view source, unsigned int type) -> unsigned int
+namespace {
+void GLClearError()
+{
+  while (glGetError() != GL_NO_ERROR) { ; }
+}
+bool GLLogCall()
+{
+  while (GLenum Error = glGetError() != GL_NO_ERROR) {
+    spdlog::error(
+
+      "OpenGL: Code: {}", Error
+      // NOLINTNEXTLINE
+    );
+  }
+}
+// NOLINTNEXTLINE
+auto CompileShader(std::string_view source, unsigned int type) -> unsigned int
 {
   auto IdOfShader = glCreateShader(type);
   const auto *Tmp = source.data();
@@ -39,7 +57,7 @@ static auto CompileShader(std::string_view source, unsigned int type) -> unsigne
   return IdOfShader;
 }
 // NOLINTNEXTLINE
-static unsigned int CreateShader(std::string_view vertexShader, std::string_view fragmentShader)
+unsigned int CreateShader(std::string_view vertexShader, std::string_view fragmentShader)
 {
   auto Prog = glCreateProgram();
   auto VertexShader = CompileShader(vertexShader, GL_VERTEX_SHADER);
@@ -54,17 +72,19 @@ static unsigned int CreateShader(std::string_view vertexShader, std::string_view
 
   return Prog;
 }
-// NOLINTNEXTLINE
-static unsigned int CreateShaderFromFile(const std::filesystem::path &vertexShaderPath,
+unsigned int CreateShaderFromFile(const std::filesystem::path &vertexShaderPath,
   const std::filesystem::path &fragmentShaderPath)
 {
-  assert(std::filesystem::exists(vertexShaderPath) && std::filesystem::exists(fragmentShaderPath));
+  if (!(std::filesystem::is_regular_file(vertexShaderPath) && std::filesystem::is_regular_file(fragmentShaderPath))) {
+    throw std::invalid_argument("No such file");
+  }
   std::stringstream VertexShaderStream;
   VertexShaderStream << std::ifstream(vertexShaderPath).rdbuf();
   std::stringstream FragmentShaderStream;
   FragmentShaderStream << std::ifstream(fragmentShaderPath).rdbuf();
   return CreateShader(VertexShaderStream.str(), FragmentShaderStream.str());
 }
+}// namespace
 
 int main()
 {
@@ -76,7 +96,7 @@ int main()
 
     /* Create a windowed mode window and its OpenGL context */
     // NOLINTNEXTLINE
-    Window = glfwCreateWindow(640, 480, "Hello World", nullptr, nullptr);
+    Window = glfwCreateWindow(640, 640, "Hello World", nullptr, nullptr);
     if (Window == nullptr) {
       glfwTerminate();
       return -1;
@@ -87,15 +107,40 @@ int main()
     [[maybe_unused]] const int Version = gladLoadGL();
     if (Version == 0) { return -1; }
 
+    // NOLINTBEGIN
+    float Positions[] = {
+      //
+      -1.0f,
+      -1.0f,
+      0.0f,
+      -1.0f,
+      0.0f,
+      0.0f,
+
+      -1.0f,
+      0.0f,
+    };
+    unsigned int Indices[] = {
+      0,
+      1,
+      2,
+      2,
+      3,
+      0,
+    };
+    // NOLINTEND
     unsigned int Buffer = 0;
-    // NOLINTNEXTLINE
-    float Positions[6] = { -0.5f, -0.5f, 0.0f, 0.5f, 0.5f, -0.5f };
     glGenBuffers(1, &Buffer);
     glBindBuffer(GL_ARRAY_BUFFER, Buffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Positions), &Positions, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, nullptr);
+
+    unsigned int Ibo = 0;
+    glGenBuffers(1, &Ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), &Indices, GL_STATIC_DRAW);
 
     const unsigned int Shader =
       CreateShaderFromFile(std::filesystem::current_path() / "glsl" / "baseVertexShader.vert.glsl",
@@ -108,7 +153,12 @@ int main()
       glClearColor(0.7F, 0.9F, 0.1F, 1.0F);
       glClear(GL_COLOR_BUFFER_BIT);
       /* Render here */
-      glDrawArrays(GL_TRIANGLES, 0, 3);
+      // NOLINTNEXTLINE
+      // glDrawArrays(GL_TRIANGLES, 0, sizeof(Positions) / (sizeof(float) * 2));
+      GLClearError();
+      // NOLINTNEXTLINE
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+      GLCheckError();
 
 
       /* Swap front and back buffers */
@@ -117,6 +167,7 @@ int main()
       /* Poll for and process events */
       glfwPollEvents();
     }
+    glDeleteProgram(Shader);
 
     glfwTerminate();
     return 0;

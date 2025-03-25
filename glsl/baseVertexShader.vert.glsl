@@ -9,4 +9,3 @@ void main() {
     // Map from [-1,1] to [0,1] for better gradient control
     vTexCoord = aPos * 0.5 + 0.5;
 }
-
