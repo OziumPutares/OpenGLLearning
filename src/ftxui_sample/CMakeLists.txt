@@ -1,4 +1,4 @@
-add_executable(intro main.cpp)
+add_executable(intro main.cpp vertex.hpp)
 
 target_link_libraries(intro PRIVATE myproject::myproject_options myproject::myproject_warnings)
 

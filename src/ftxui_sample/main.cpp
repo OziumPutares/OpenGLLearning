@@ -1,40 +1,43 @@
-//
+#include <glad/glad.h>  //
+
 #include <cassert>
 #include <filesystem>
 #include <fstream>
-#include <glad/glad.h>//
 //
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
+#include <spdlog/spdlog.h>
+
 #include <cstddef>
 #include <exception>
 #include <iostream>
 #include <print>
-#include <spdlog/spdlog.h>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
 #include <vector>
 
+#include "vertex.hpp"
+
 // NOLINTNEXTLINE
 namespace {
-void GLClearError()
-{
-  while (glGetError() != GL_NO_ERROR) { ; }
+void GLClearError() {
+  while (glGetError() != GL_NO_ERROR) {
+    ;
+  }
 }
-bool GLLogCall()
-{
+bool GLLogCall() {
   while (GLenum Error = glGetError() != GL_NO_ERROR) {
     spdlog::error(
 
-      "OpenGL: Code: {}", Error
-      // NOLINTNEXTLINE
+        "OpenGL: Code: {}", Error
+        // NOLINTNEXTLINE
     );
   }
+  return true;
 }
-// NOLINTNEXTLINE
-auto CompileShader(std::string_view source, unsigned int type) -> unsigned int
-{
+//  NOLINTNEXTLINE
+auto CompileShader(std::string_view source, unsigned int type) -> unsigned int {
   auto IdOfShader = glCreateShader(type);
   const auto *Tmp = source.data();
   glShaderSource(IdOfShader, 1, &Tmp, nullptr);
@@ -45,10 +48,13 @@ auto CompileShader(std::string_view source, unsigned int type) -> unsigned int
   if (Result == GL_FALSE) {
     int Length = 0;
     glGetShaderiv(IdOfShader, GL_INFO_LOG_LENGTH, &Length);
-    std::vector<char> Message = std::vector<char>(static_cast<std::size_t>(Length));
+    std::vector<char> Message =
+        std::vector<char>(static_cast<std::size_t>(Length));
     glGetShaderInfoLog(IdOfShader, Length, &Length, Message.data());
     std::println("Failed to compile");
-    for (auto const &Letter : Message) { std::print("{}", Letter); }
+    for (auto const &Letter : Message) {
+      std::print("{}", Letter);
+    }
     std::println();
     glDeleteShader(IdOfShader);
     return 0;
@@ -57,8 +63,8 @@ auto CompileShader(std::string_view source, unsigned int type) -> unsigned int
   return IdOfShader;
 }
 // NOLINTNEXTLINE
-unsigned int CreateShader(std::string_view vertexShader, std::string_view fragmentShader)
-{
+unsigned int CreateShader(std::string_view vertexShader,
+                          std::string_view fragmentShader) {
   auto Prog = glCreateProgram();
   auto VertexShader = CompileShader(vertexShader, GL_VERTEX_SHADER);
   auto FragmentShader = CompileShader(fragmentShader, GL_FRAGMENT_SHADER);
@@ -72,10 +78,11 @@ unsigned int CreateShader(std::string_view vertexShader, std::string_view fragme
 
   return Prog;
 }
-unsigned int CreateShaderFromFile(const std::filesystem::path &vertexShaderPath,
-  const std::filesystem::path &fragmentShaderPath)
-{
-  if (!(std::filesystem::is_regular_file(vertexShaderPath) && std::filesystem::is_regular_file(fragmentShaderPath))) {
+unsigned int CreateShaderFromFile(
+    const std::filesystem::path &vertexShaderPath,
+    const std::filesystem::path &fragmentShaderPath) {
+  if (!(std::filesystem::is_regular_file(vertexShaderPath) &&
+        std::filesystem::is_regular_file(fragmentShaderPath))) {
     throw std::invalid_argument("No such file");
   }
   std::stringstream VertexShaderStream;
@@ -84,15 +91,16 @@ unsigned int CreateShaderFromFile(const std::filesystem::path &vertexShaderPath,
   FragmentShaderStream << std::ifstream(fragmentShaderPath).rdbuf();
   return CreateShader(VertexShaderStream.str(), FragmentShaderStream.str());
 }
-}// namespace
+}  // namespace
 
-int main()
-{
+int main() {
   try {
     GLFWwindow *Window = nullptr;
 
     /* Initialize the library */
-    if (glfwInit() == 0) { return -1; }
+    if (glfwInit() == 0) {
+      return -1;
+    }
 
     /* Create a windowed mode window and its OpenGL context */
     // NOLINTNEXTLINE
@@ -105,34 +113,24 @@ int main()
     /* Make the window's context current */
     glfwMakeContextCurrent(Window);
     [[maybe_unused]] const int Version = gladLoadGL();
-    if (Version == 0) { return -1; }
+    if (Version == 0) {
+      return -1;
+    }
 
     // NOLINTBEGIN
     float Positions[] = {
-      //
-      -1.0f,
-      -1.0f,
-      0.0f,
-      -1.0f,
-      0.0f,
-      0.0f,
+        //
+        -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f,
 
-      -1.0f,
-      0.0f,
+        -1.0f, 0.0f,
     };
-    unsigned int Indices[] = {
-      0,
-      1,
-      2,
-      2,
-      3,
-      0,
-    };
+    unsigned int Indices[] = {0, 1, 2, 2, 3, 0};
     // NOLINTEND
     unsigned int Buffer = 0;
     glGenBuffers(1, &Buffer);
     glBindBuffer(GL_ARRAY_BUFFER, Buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Positions), &Positions, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Positions), &Positions,
+                 GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, nullptr);
@@ -140,11 +138,13 @@ int main()
     unsigned int Ibo = 0;
     glGenBuffers(1, &Ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), &Indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), &Indices,
+                 GL_STATIC_DRAW);
 
-    const unsigned int Shader =
-      CreateShaderFromFile(std::filesystem::current_path() / "glsl" / "baseVertexShader.vert.glsl",
-        std::filesystem::current_path() / "glsl" / "redFragmentShader.frag.glsl");
+    const unsigned int Shader = CreateShaderFromFile(
+        std::filesystem::current_path() / "glsl" / "baseVertexShader.vert.glsl",
+        std::filesystem::current_path() / "glsl" /
+            "redFragmentShader.frag.glsl");
     glUseProgram(Shader);
 
     /* Loop until the user closes the window */
@@ -155,11 +155,8 @@ int main()
       /* Render here */
       // NOLINTNEXTLINE
       // glDrawArrays(GL_TRIANGLES, 0, sizeof(Positions) / (sizeof(float) * 2));
-      GLClearError();
       // NOLINTNEXTLINE
       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-      GLCheckError();
-
 
       /* Swap front and back buffers */
       glfwSwapBuffers(Window);
@@ -173,5 +170,7 @@ int main()
     return 0;
   } catch (std::exception const &Err) {
     std::cerr << Err.what();
+    GLClearError();
+    GLLogCall();
   }
 }
