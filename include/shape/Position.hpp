@@ -95,11 +95,8 @@ template <typename T, std::size_t dimension>
     num + num2;
   }
 [[nodiscard]] constexpr auto distanceFrom(
-    Position<T, dimension> lhs, Position<T, dimension> rhs = [] {
-      auto Pos = Position<T, dimension>{};
-      Pos.fill(0);
-      return Pos;
-    }) {
+    Position<T, dimension> lhs,
+    Position<T, dimension> rhs = Position<T, dimension>{}) {
   T Total = 0;
   for (auto [lhsIt, rhsIt] = std::tuple{std::begin(lhs), std::begin(rhs)};
        lhsIt != std::end(lhs) && rhsIt != std::end(rhs); lhs++, rhs++) {
