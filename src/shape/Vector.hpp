@@ -2,8 +2,11 @@
 #include <cmath>
 #include <cstddef>
 #include <iterator>
+
+#include "Position.hpp"
 inline constexpr auto PowerForSqrt = 0.5;
 
+namespace gl_abstractions::base {
 template <typename T, std ::size_t dimension>
   requires requires(T lhs, T rhs) {
     (rhs - lhs)->T;
@@ -49,3 +52,27 @@ Vector<T, dimension> operator-(Vector<T, dimension> const& first,
   }
   return ResultantVector;
 }
+template <template <typename, std::size_t> typename Container, typename T,
+          std::size_t dimension>
+concept SubtractableVector =
+    std::is_same_v<Container<T, dimension>, Vector<T, dimension>>
+
+    || std::is_same_v<Container<T, dimension>, Position<T, dimension>>;
+
+///
+template <typename T, std ::size_t dimension,
+          template <typename, std::size_t> typename Container1,
+          template <typename, std::size_t> typename Container2>
+  requires SubtractableVector<Container1, T, dimension> &&
+           SubtractableVector<Container2, T, dimension>
+Vector<T, dimension> operator-(Container1<T, dimension> lhs,
+                               Container2<T, dimension> rhs) {
+  auto ResultantVector = Vector<T, dimension>{};
+  auto FirstIt = std::cbegin(lhs);
+  auto ResIt = std::begin(ResultantVector);
+  for (auto const& Val : rhs) {
+    *ResIt = *FirstIt - Val;
+  }
+  return ResultantVector;
+}
+}  // namespace gl_abstractions::base
