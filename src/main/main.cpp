@@ -84,11 +84,15 @@ int main() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), &Indices,
                  GL_STATIC_DRAW);
-    unsigned int const Shader = CreateShaderFromFile(
+    auto const ShaderProgramEx = CreateShaderFromFile(
         std::filesystem::current_path() / "glsl" / "baseVertexShader.vert.glsl",
         std::filesystem::current_path() / "glsl" /
             "redFragmentShader.frag.glsl");
-    glUseProgram(Shader);
+    if (!ShaderProgramEx.has_value()) {
+      spdlog::error("Failed to create shader program see: {}",
+                    ShaderProgramEx.error());
+    }
+    glUseProgram(ShaderProgramEx.value());
 
     /* Loop until the user closes the window */
     while (glfwWindowShouldClose(Window) == 0) {
@@ -107,7 +111,7 @@ int main() {
       /* Poll for and process events */
       glfwPollEvents();
     }
-    glDeleteProgram(Shader);
+    glDeleteProgram(ShaderProgramEx.value());
 
     glfwTerminate();
     return 0;
