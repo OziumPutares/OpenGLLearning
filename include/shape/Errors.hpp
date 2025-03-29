@@ -1,9 +1,11 @@
-#include <spdlog/fmt/bundled/format.h>
+#include <fmt/base.h>
+#include <fmt/format.h>
 
 #include <cstdint>
 #include <expected>
-#include <stacktrace>
 #include <string>
+#include <string_view>
+#include <utility>
 namespace error_handling {
 
 enum struct ErrorLevel : std::uint8_t {
@@ -13,34 +15,22 @@ enum struct ErrorLevel : std::uint8_t {
   CriticalError,
 };
 struct State {
-  std::stacktrace m_BackTrace;
   std::string m_Message;
   ErrorLevel m_Level;
 
   // NOLINTNEXTLINE
   State(std::string what, ErrorLevel level)
-      : m_BackTrace(std::stacktrace::current()),
-        m_Message(std::move(what)),
-        m_Level(level) {}
+      : m_Message(std::move(what)), m_Level(level) {}
 };
 }  // namespace error_handling
 template <typename T>
 using ErrorHandler = std::expected<T, error_handling::State>;
-template <>
-struct fmt::formatter<error_handling::State> {
-  static constexpr auto parse(format_parse_context& ctx)
-      -> decltype(ctx.begin()) {
-    return ctx.end();
-  }
 
-  template <typename FormatContext>
-  auto format(error_handling::State const& input, FormatContext& ctx)
-      -> decltype(ctx.out()) {
-#ifdef DEBUG
-    return format_to(ctx.out(), "Message: {} Backtrace: {}", input.m_Message,
-                     input.m_BackTrace);
-#else
-    return format_to(ctx.out(), "Message: {}", input.m_Message);
-#endif
+template <>
+struct fmt::formatter<error_handling::State> : formatter<std::string_view> {
+  auto format(error_handling::State const& value, format_context& ctx) const
+      -> format_context::iterator {
+    return formatter<std::string_view>::format(
+        fmt::format("Message: {}\n", value.m_Message), ctx);
   }
 };

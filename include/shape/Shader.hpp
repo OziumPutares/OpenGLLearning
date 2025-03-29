@@ -11,7 +11,6 @@
 #include <format>
 #include <fstream>
 #include <initializer_list>
-#include <source_location>
 #include <sstream>
 #include <stacktrace>
 #include <stdexcept>

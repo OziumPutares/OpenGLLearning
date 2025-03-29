@@ -41,17 +41,6 @@ struct Vector {
     return std::pow(Sum, PowerForSqrt);
   }
 };
-template <typename T, std ::size_t dimension>
-Vector<T, dimension> operator-(Vector<T, dimension> const& first,
-                               Vector<T, dimension> const& second) {
-  auto ResultantVector = Vector<T, dimension>{};
-  auto FirstIt = std::cbegin(first);
-  auto ResIt = std::begin(ResultantVector);
-  for (auto const& Val : second) {
-    *ResIt = *FirstIt - second;
-  }
-  return ResultantVector;
-}
 template <template <typename, std::size_t> typename Container, typename T,
           std::size_t dimension>
 concept SubtractableVector =
@@ -65,8 +54,8 @@ template <typename T, std ::size_t dimension,
           template <typename, std::size_t> typename Container2>
   requires SubtractableVector<Container1, T, dimension> &&
            SubtractableVector<Container2, T, dimension>
-Vector<T, dimension> operator-(Container1<T, dimension> lhs,
-                               Container2<T, dimension> rhs) {
+constexpr Vector<T, dimension> operator-(Container1<T, dimension> lhs,
+                                         Container2<T, dimension> rhs) {
   auto ResultantVector = Vector<T, dimension>{};
   auto FirstIt = std::cbegin(lhs);
   auto ResIt = std::begin(ResultantVector);

@@ -9,7 +9,7 @@ function(myproject_setup_dependencies)
   # already been provided to us by a parent project
 
   if(NOT TARGET fmtlib::fmtlib)
-    cpmaddpackage("gh:fmtlib/fmt#9.1.0")
+    cpmaddpackage("gh:fmtlib/fmt#11.1.0")
   endif()
 
   if(NOT TARGET spdlog::spdlog)
@@ -17,7 +17,7 @@ function(myproject_setup_dependencies)
       NAME
       spdlog
       VERSION
-      1.11.0
+      1.15.1
       GITHUB_REPOSITORY
       "gabime/spdlog"
       OPTIONS
@@ -45,12 +45,5 @@ function(myproject_setup_dependencies)
       "GLFW_BUILD_DOCS OFF")
   endif()
   find_package(OpenGL REQUIRED)
-
-  #  set(GLEW_BUILD_STATIC
-  #      ON
-  #      CACHE BOOL "Build static GLEW" FORCE)
-  #  set(GLEW_BUILD_SHARED
-  #      OFF
-  #      CACHE BOOL "Do not build shared GLEW" FORCE)
-
+  find_library(stdc++exp REY)
 endfunction()
