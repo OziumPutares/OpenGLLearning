@@ -61,6 +61,8 @@ constexpr Vector<T, dimension> operator-(Container1<T, dimension> lhs,
   auto ResIt = std::begin(ResultantVector);
   for (auto const& Val : rhs) {
     *ResIt = *FirstIt - Val;
+    FirstIt++;
+    ResIt++;
   }
   return ResultantVector;
 }

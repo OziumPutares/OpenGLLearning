@@ -4,7 +4,6 @@
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
-#include <algorithm>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -14,13 +13,11 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include <source_location>
+#include <print>
 #include <sstream>
-#include <stacktrace>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <vector>
 
 #include "Errors.hpp"
 template <GLenum type>
@@ -202,7 +199,7 @@ constexpr auto CreateColourFragmentShaderRGBA(uint8_t red, uint8_t green,
   try {
     constexpr float SizeOfUint8 = std::numeric_limits<std::uint8_t>::max();
     using namespace std::string_literals;
-    std::cout << std::format(
+    auto ShaderThing = std::format(
         R"(
 #version 330 core
 out vec4 FragColor;
@@ -216,19 +213,8 @@ void main() {{
         static_cast<float>(green) / SizeOfUint8,
         static_cast<float>(blue) / SizeOfUint8,
         static_cast<float>(alpha) / SizeOfUint8);
-    return Shader<GL_FRAGMENT_SHADER>{
-        std::format(R"(
-#version 330 core
-out vec4 FragColor;
-
-void main() {{
-
-    FragColor = vec4({:f},{:f},{:f}, {:f});
-}})",
-                    static_cast<float>(red) / SizeOfUint8,
-                    static_cast<float>(green) / SizeOfUint8,
-                    static_cast<float>(blue) / SizeOfUint8,
-                    static_cast<float>(alpha) / SizeOfUint8)};
+    std::println("{}", ShaderThing);
+    return Shader<GL_FRAGMENT_SHADER>{ShaderThing};
   } catch (std::exception &Err) {
     return std::unexpected(
         error_handling::State(Err.what(), error_handling::ErrorLevel::Error));
@@ -238,18 +224,15 @@ void main() {{
     -> ErrorHandler<Shader<GL_VERTEX_SHADER>> {
   try {
     using namespace std::string_literals;
-    return Shader<GL_VERTEX_SHADER>{
-        R"(
-#version 330 core
+    std::string ShaderSource = R"(#version 330 core
 
-layout (location = 0) in vec2 aPos; // Vertex position (-1 to 1)
-out vec2 vTexCoord; // Pass to fragment shader
+layout(location = 0) in vec4 position;
 
 void main() {
-    gl_Position = vec4(aPos, 0.0, 1.0);
-
-}
-   )"};
+    gl_Position = position;
+})";
+    std::println("{}", ShaderSource);
+    return Shader<GL_VERTEX_SHADER>{ShaderSource};
 
   } catch (std::exception &Err) {
     return std::unexpected(

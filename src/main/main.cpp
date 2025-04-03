@@ -11,8 +11,6 @@
 #include <iostream>
 #include <shape/Shader.hpp>
 
-#include "vertex.hpp"
-
 // NOLINTNEXTLINE
 namespace {
 // NOLINTNEXTLINE
@@ -86,7 +84,7 @@ int main() {
                  GL_STATIC_DRAW);
     auto const Shader = ShaderProgram{[](auto programID) static {
       // NOLINTNEXTLINE
-      auto FragShader = CreateColourFragmentShaderRGBA(255, 255, 255, 255);
+      auto FragShader = CreateColourFragmentShaderRGBA(120, 128, 0, 255);
       if (!FragShader.has_value()) {
         spdlog::error("Creating shader failed message here {}",
                       FragShader.error().m_Message);
@@ -100,6 +98,8 @@ int main() {
       } else {
         glAttachShader(programID, VertexShader.value().getShader());
       }
+      glDeleteShader(FragShader.value().getShader());
+      glDeleteShader(VertexShader.value().getShader());
     }};
     auto const ShaderProgramEx = CreateShaderFromFile(
         std::filesystem::current_path() / "glsl" / "baseVertexShader.vert.glsl",
