@@ -84,6 +84,23 @@ int main() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), &Indices,
                  GL_STATIC_DRAW);
+    auto const Shader = ShaderProgram{[](auto programID) static {
+      // NOLINTNEXTLINE
+      auto FragShader = CreateColourFragmentShaderRGBA(255, 255, 255, 255);
+      if (!FragShader.has_value()) {
+        spdlog::error("Creating shader failed message here {}",
+                      FragShader.error().m_Message);
+      } else {
+        glAttachShader(programID, FragShader.value().getShader());
+      }
+      auto VertexShader = CreaterBaseVertexShader();
+      if (!VertexShader.has_value()) {
+        spdlog::error("Creating shader failed message here {}",
+                      FragShader.error().m_Message);
+      } else {
+        glAttachShader(programID, VertexShader.value().getShader());
+      }
+    }};
     auto const ShaderProgramEx = CreateShaderFromFile(
         std::filesystem::current_path() / "glsl" / "baseVertexShader.vert.glsl",
         std::filesystem::current_path() / "glsl" /
@@ -92,7 +109,7 @@ int main() {
       spdlog::error("Failed to create shader program see: {}",
                     ShaderProgramEx.error());
     }
-    glUseProgram(ShaderProgramEx.value());
+    glUseProgram(Shader.GetProgramID());
 
     /* Loop until the user closes the window */
     while (glfwWindowShouldClose(Window) == 0) {

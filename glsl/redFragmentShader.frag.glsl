@@ -5,7 +5,7 @@ out vec4 FragColor;
 
 void main() {
     vec3 color1 = vec3(1.0, 0.0, 0.0); // Red
-    vec3 color2 = vec3(0.0, 0.0 , 0.0); // Black
+    vec3 color2 = vec3(1.0, 1.0 , 1.0); // Black
     vec3 blue = vec3(0.0, 0.0 , 1.0); // Blue
     vec3 color3 = vec3(0.0, 1.0, 0.0);
     vec3 gradientTmp2 = mix(blue, color3, vTexCoord.x );

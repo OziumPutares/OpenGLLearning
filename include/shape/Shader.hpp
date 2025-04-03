@@ -5,25 +5,29 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <initializer_list>
+#include <iostream>
+#include <limits>
+#include <source_location>
 #include <sstream>
 #include <stacktrace>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <variant>
+#include <vector>
 
 #include "Errors.hpp"
 template <GLenum type>
-concept GLShader = std::ranges::any_of(
-    {GL_VERTEX_SHADER, GL_TESS_CONTROL_SHADER, GL_TESS_EVALUATION_SHADER,
-     GL_GEOMETRY_SHADER, GL_FRAGMENT_SHADER, GL_COMPUTE_SHADER},
-    [](auto elem) { return elem == type; });
+concept GLShader =
+    type == GL_VERTEX_SHADER || GL_TESS_CONTROL_SHADER == type ||
+    GL_TESS_EVALUATION_SHADER == type || GL_GEOMETRY_SHADER == type ||
+    GL_FRAGMENT_SHADER == type || GL_COMPUTE_SHADER == type;
 // NOLINTNEXTLINE
 inline auto CompileShaderNoThrow(std::string_view source, unsigned int type)
     -> ErrorHandler<unsigned int> {
@@ -38,7 +42,7 @@ inline auto CompileShaderNoThrow(std::string_view source, unsigned int type)
     int Length = 0;
     glGetShaderiv(IdOfShader, GL_INFO_LOG_LENGTH, &Length);
     std::string Message;
-    Message.reserve(static_cast<size_t>(Length));
+    Message.reserve(static_cast<std::size_t>(Length));
     glGetShaderInfoLog(IdOfShader, Length, &Length, Message.data());
     glDeleteShader(IdOfShader);
     return std::unexpected(error_handling::State(
@@ -130,11 +134,10 @@ inline auto CompileShader(std::string_view source, unsigned int type)
     std::string Message;
     Message.reserve(static_cast<size_t>(Length));
     glGetShaderInfoLog(IdOfShader, Length, &Length, Message.data());
-    spdlog::error("Failed to compile, Message: {}", Message.data());
+    spdlog::error("Failed to compile, Message: {}, ", Message);
     glDeleteShader(IdOfShader);
-    throw std::runtime_error(
-        "Failed to compile, see message" + Message +
-        " Backtrace:" + std::to_string(std::stacktrace::current()));
+    throw std::runtime_error("Failed to compile, see message: " +
+                             fmt::format("{}", Message));
   }
 
   return IdOfShader;
@@ -158,7 +161,7 @@ struct Shader {
     }
     m_ShaderID = ShaderCompilationResult.value();
   }
-  explicit Shader(std::string const &shaderSource)
+  explicit Shader(std::string_view &shaderSource)
       : m_ShaderID(CompileShader(shaderSource, type)) {}
   unsigned int getShader() { return m_ShaderID; }
   ~Shader() { glDeleteShader(m_ShaderID); }
@@ -166,8 +169,7 @@ struct Shader {
  private:
   unsigned int m_ShaderID;
 };
-struct ShaderProgram {
- private:
+class ShaderProgram {
   unsigned int m_ProgramID;
 
  public:
@@ -177,21 +179,80 @@ struct ShaderProgram {
   ShaderProgram &operator=(ShaderProgram const &) = delete;
   ShaderProgram &operator=(ShaderProgram &&) = default;
 
-  template <GLenum type>
-    requires GLShader<type>
-  constexpr ShaderProgram(
-      std::initializer_list<std::variant<Shader<type>>> shaders)
+  template <typename ConstructionStrategy>
+    requires(std::invocable<ConstructionStrategy, unsigned int>)
+  /*
+   *@function a function that adds the program but without linking or validating
+   * */
+  constexpr explicit ShaderProgram(ConstructionStrategy constructor)
       : m_ProgramID(glCreateProgram()) {
-    std::ranges::for_each(shaders, [this](auto const &shaderVariant) {
-      std::visit(
-          [this](auto shader) { glAttachShader(this->m_ProgramID, shader); },
-          shaderVariant);
-    });
+    constructor(m_ProgramID);
     glLinkProgram(m_ProgramID);
     glValidateProgram(m_ProgramID);
-    std::ranges::for_each(shaders, [](auto const &shaderVariant) {
-      std::visit([](auto shader) { glDeleteShader(shader); }, shaderVariant);
-    });
+  }
+  [[nodiscard]] constexpr auto GetProgramID() const noexcept -> unsigned int {
+    return m_ProgramID;
   }
   constexpr ~ShaderProgram() { glDeleteProgram(m_ProgramID); }
 };
+// NOLINTNEXTLINE
+constexpr auto CreateColourFragmentShaderRGBA(uint8_t red, uint8_t green,
+                                              uint8_t blue, uint8_t alpha)
+    -> ErrorHandler<Shader<GL_FRAGMENT_SHADER>> {
+  try {
+    constexpr float SizeOfUint8 = std::numeric_limits<std::uint8_t>::max();
+    using namespace std::string_literals;
+    std::cout << std::format(
+        R"(
+#version 330 core
+out vec4 FragColor;
+
+void main() {{
+
+    FragColor = vec4({:f},{:f},{:f}, {:f});
+}})",
+
+        static_cast<float>(red) / SizeOfUint8,
+        static_cast<float>(green) / SizeOfUint8,
+        static_cast<float>(blue) / SizeOfUint8,
+        static_cast<float>(alpha) / SizeOfUint8);
+    return Shader<GL_FRAGMENT_SHADER>{
+        std::format(R"(
+#version 330 core
+out vec4 FragColor;
+
+void main() {{
+
+    FragColor = vec4({:f},{:f},{:f}, {:f});
+}})",
+                    static_cast<float>(red) / SizeOfUint8,
+                    static_cast<float>(green) / SizeOfUint8,
+                    static_cast<float>(blue) / SizeOfUint8,
+                    static_cast<float>(alpha) / SizeOfUint8)};
+  } catch (std::exception &Err) {
+    return std::unexpected(
+        error_handling::State(Err.what(), error_handling::ErrorLevel::Error));
+  }
+}
+[[nodiscard]] constexpr auto CreaterBaseVertexShader()
+    -> ErrorHandler<Shader<GL_VERTEX_SHADER>> {
+  try {
+    using namespace std::string_literals;
+    return Shader<GL_VERTEX_SHADER>{
+        R"(
+#version 330 core
+
+layout (location = 0) in vec2 aPos; // Vertex position (-1 to 1)
+out vec2 vTexCoord; // Pass to fragment shader
+
+void main() {
+    gl_Position = vec4(aPos, 0.0, 1.0);
+
+}
+   )"};
+
+  } catch (std::exception &Err) {
+    return std::unexpected(
+        error_handling::State(Err.what(), error_handling::ErrorLevel::Error));
+  }
+}
