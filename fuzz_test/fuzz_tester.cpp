@@ -1,28 +1,28 @@
+#include <fmt/base.h>
+
 #include <cstddef>
 #include <cstdint>
-#include <fmt/core.h>//NOLINT
 #include <iterator>
 
 namespace {
 
-[[nodiscard]] auto sum_values(const uint8_t *Data, size_t Size)
-{
-  constexpr auto scale = 1000;
+[[nodiscard]] auto SumValues(uint8_t const *Data, size_t Size) {
+  constexpr auto kScale = 1000;
 
-  int value = 0;
-  for (std::size_t offset = 0; offset < Size; ++offset) {
-    value += static_cast<int>(*std::next(Data, static_cast<long>(offset))) * scale;
+  int Value = 0;
+  for (std::size_t Offset = 0; Offset < Size; ++Offset) {
+    Value +=
+        static_cast<int>(*std::next(Data, static_cast<long>(Offset))) * kScale;
   }
-  return value;
+  return Value;
 }
-}// namespace
+}  // namespace
 
 // Fuzzer that attempts to invoke undefined behavior for signed integer overflow
 // cppcheck-suppress unusedFunction symbolName=LLVMFuzzerTestOneInput
 namespace {
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
-{
-  fmt::print("Value sum: {}, len{}\n", sum_values(Data, Size), Size);
+extern "C" int LLVMFuzzerTestOneInput(uint8_t const *Data, size_t Size) {
+  fmt::print("Value sum: {}, len{}\n", SumValues(Data, Size), Size);
   return 0;
 }
-}// namespace
+}  // namespace

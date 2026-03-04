@@ -1,2 +1,0 @@
-// NOLINTNEXTLINE
-#include <shape/*.hpp>

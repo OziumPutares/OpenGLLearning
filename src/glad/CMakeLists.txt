@@ -2,7 +2,7 @@ include(GenerateExportHeader)
 
 add_library(glad STATIC glad.c)
 
-add_library(myproject::glad ALIAS glad)
+add_library(glad::glad ALIAS glad)
 target_link_libraries(glad)
 
 target_include_directories(glad ${WARNING_GUARD} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

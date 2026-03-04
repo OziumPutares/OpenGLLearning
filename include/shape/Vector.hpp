@@ -1,69 +1,98 @@
+#ifndef SHAPE_VECTOR_HPP
+#define SHAPE_VECTOR_HPP
+
 #include <array>
-#include <cmath>
+#include <concepts>
 #include <cstddef>
-#include <iterator>
+namespace gl {
 
-#include "Position.hpp"
-inline constexpr auto PowerForSqrt = 0.5;
-
-namespace gl_abstractions::base {
-template <typename T, std ::size_t dimension>
-  requires requires(T lhs, T rhs) {
-    (rhs - lhs)->T;
-    std ::pow(rhs, 2)->T;
-    std ::pow(lhs, PowerForSqrt)->T;
-    (rhs += lhs)->T;
-    (rhs + lhs)->T;
-  }
+template <typename T, std::size_t Dimension>
 struct Vector {
-  std::array<T, dimension> buffer{};
-  [[nodiscard]] auto end() noexcept { return std::end(buffer); }
-  [[nodiscard]] auto begin() noexcept { return std::begin(buffer); }
-  [[nodiscard]] constexpr auto cend() const noexcept {
-    return std::cend(buffer);
-  }
-  [[nodiscard]] constexpr auto cbegin() const noexcept {
-    return std::cbegin(buffer);
-  }
-  [[nodiscard]] auto rend() noexcept { return std::rend(buffer); }
-  [[nodiscard]] auto rbegin() noexcept { return std::rbegin(buffer); }
-  [[nodiscard]] constexpr auto crend() const noexcept {
-    return std::crend(buffer);
-  }
-  [[nodiscard]] constexpr auto crbegin() const noexcept {
-    return std::crbegin(buffer);
-  }
-  [[nodiscard]] constexpr auto Magnitude() const noexcept -> T {
-    T Sum{};
-    for (auto Val : buffer) {
-      Sum += std::pow(Val, 2);
-    }
-    return std::pow(Sum, PowerForSqrt);
-  }
+  std::array<T, Dimension> m_Values;
+  auto X() -> T& { return m_Values[0]; };
+  auto Y() -> T& { return m_Values[1]; };
+  auto Z() -> T& { return m_Values[2]; };
+  auto W() -> T& { return m_Values[3]; };
 };
-template <template <typename, std::size_t> typename Container, typename T,
-          std::size_t dimension>
-concept SubtractableVector =
-    std::is_same_v<Container<T, dimension>, Vector<T, dimension>>
+// NOLINTBEGIN
+template <typename T>
+struct Vector<T, 1> {
+  std::array<T, 1> m_Values;
+  T& X() { return m_Values[0]; };
+};
 
-    || std::is_same_v<Container<T, dimension>, Position<T, dimension>>;
+template <typename T>
+struct Vector<T, 2> {
+  std::array<T, 2> m_Values;
+  T& X() { return m_Values[0]; };
+  T& Y() { return m_Values[1]; };
+};
 
-///
-template <typename T, std ::size_t dimension,
-          template <typename, std::size_t> typename Container1,
-          template <typename, std::size_t> typename Container2>
-  requires SubtractableVector<Container1, T, dimension> &&
-           SubtractableVector<Container2, T, dimension>
-constexpr Vector<T, dimension> operator-(Container1<T, dimension> lhs,
-                                         Container2<T, dimension> rhs) {
-  auto ResultantVector = Vector<T, dimension>{};
-  auto FirstIt = std::cbegin(lhs);
-  auto ResIt = std::begin(ResultantVector);
-  for (auto const& Val : rhs) {
-    *ResIt = *FirstIt - Val;
-    FirstIt++;
-    ResIt++;
-  }
-  return ResultantVector;
+template <typename T>
+struct Vector<T, 3> {
+  std::array<T, 3> m_Values;
+  T& X() { return m_Values[0]; };
+  T& Y() { return m_Values[1]; };
+  T& Z() { return m_Values[2]; };
+};
+
+template <typename T>
+struct Vector<T, 4> {
+  std::array<T, 4> m_Values;
+  T& X() { return m_Values[0]; };
+  T& Y() { return m_Values[1]; };
+  T& Z() { return m_Values[2]; };
+  T& W() { return m_Values[3]; };
+};
+// NOLINTEND
+template <typename T, size_t Num>
+consteval auto VectorDef() {
+  return Vector<T, Num>{};
 }
-}  // namespace gl_abstractions::base
+template <typename T>
+using Vector1 = decltype(VectorDef<T, 1>());
+template <typename T>
+using Vector2 = decltype(VectorDef<T, 2>());
+template <typename T>
+using Vector3 = decltype(VectorDef<T, 3>());
+template <typename T>
+using Vector4 = decltype(VectorDef<T, 4>());
+template <typename T, std::size_t Dimension>
+  requires requires(T val1, T val2) {
+    { val1 + val2 } -> std::same_as<T>;
+  }
+constexpr auto operator+(gl::Vector<T, Dimension> const& lhs,
+                         gl::Vector<T, Dimension> const& rhs)
+    -> gl::Vector<T, Dimension> {
+  gl::Vector<T, Dimension> Temp{};
+  for (auto It = 0z; It < Temp.m_Values.size(); It++) {
+    Temp.m_Values[It] = lhs.m_Values[It] + rhs.m_Values[It];
+  }
+  return Temp;
+}
+template <typename T, std::size_t Dimension, typename U>
+  requires requires(T val1, U val2) {
+    { val1 * val2 } -> std::same_as<T>;
+  }
+constexpr auto operator*(gl::Vector<T, Dimension> const& lhs, U multiplier)
+    -> gl::Vector<T, Dimension> {
+  gl::Vector<T, Dimension> Temp{};
+  for (auto It = 0z; It < Temp.m_Values.size(); It++) {
+    Temp.m_Values[It] = lhs.m_Values[It] * multiplier;
+  }
+  return Temp;
+}
+template <typename T, std::size_t Dimension, typename U>
+  requires requires(U val1, T val2) {
+    { val1 * val2 } -> std::same_as<T>;
+  }
+constexpr auto operator*(U multiplier, gl::Vector<T, Dimension> const& rhs)
+    -> gl::Vector<T, Dimension> {
+  gl::Vector<T, Dimension> Temp{};
+  for (auto It = 0z; It < Temp.m_Values.size(); It++) {
+    Temp.m_Values[It] = multiplier * rhs.m_Values[It];
+  }
+  return Temp;
+}
+}  // namespace gl
+#endif

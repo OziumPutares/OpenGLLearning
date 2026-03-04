@@ -1,4 +1,4 @@
-add_executable(intro main.cpp vertex.hpp)
+add_executable(intro main.cpp)
 
 target_link_libraries(intro PRIVATE myproject::myproject_options myproject::myproject_warnings)
 
@@ -10,7 +10,7 @@ target_link_system_libraries(
   lefticus::tools
   glfw
   OpenGL::GL
-  myproject::glad)
+  glad::glad)
 target_compile_features(glad PUBLIC cxx_std_26)
 
 target_include_directories(intro PRIVATE "${CMAKE_BINARY_DIR}/configured_files/include")
